@@ -258,26 +258,29 @@ class DepthCamera:
         first = False
         success = False
         self.calibration_status = CalibrationStatusEnum.CALIBRATING
-
+ 
         # Create the windows to display the binrary mask and the HSV frame
         calibration_window = CameraFeedWindow(rootWindow=self.rootWindow, name='Calibration')
-
+ 
         if self.position_estimator is not None:
             while self.position_estimator.count_calibration_frames < 200 and time.time() - starttime < 300:
                 self.position_estimator.intr= self.intr
-                _, color_image, depth_image, _ = self.get_frame()
+                if not self.get_frame():
+                    continue
+                color_image = self.frame
+                depth_image = self.depth_frame
                 success = self.position_estimator.calibrate(color_image, depth_image, first, calibration_window)
                 first = success if not first else first
                 if self.show_video_feed:
                     self.rootWindow.update()
-
+ 
         if success:
             self.position_estimator.compute_camera_to_simulation_transform()
             logger.info(f"Camera {self.camera_serial} successfully calibrated.")
-
+ 
         # Close the calibration window
         calibration_window.closed()
-
+ 
         self.calibration_status = CalibrationStatusEnum.CALIBRATED if success else CalibrationStatusEnum.NOT_CALIBRATED
         return success
 
